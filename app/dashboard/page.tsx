@@ -43,6 +43,7 @@ const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
 
 interface DailyStatsData {
   date: string;
+  fullDate: string;
   work_minutes: number;
   questions_answered: number;
   topic: string | null;
