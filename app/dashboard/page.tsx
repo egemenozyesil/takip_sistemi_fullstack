@@ -1,33 +1,69 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth/AuthContext';
-import { Button } from '@/app/components/Button';
 import { Card, CardHeader, CardTitle, CardContent } from '@/app/components/Card';
-import { Input } from '@/app/components/Input';
-import { Alert } from '@/app/components/Alert';
 import Sidebar from '@/app/components/Sidebar';
-import { X } from 'lucide-react';
+import Navbar from '@/app/components/Navbar';
+import { 
+  BookOpen, 
+  Clock, 
+  Target, 
+  Book, 
+  LogOut, 
+  TrendingUp,
+  Calendar,
+  Award,
+  Zap,
+  Flame,
+  Trophy
+} from 'lucide-react';
+import Link from 'next/link';
+import {
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
+} from 'recharts';
+import dynamic from 'next/dynamic';
 
-interface DailyStatsForm {
-  work_hours: string;
-  questions_answered: string;
-  topics_studied: string;
+const Chart = dynamic(() => import('react-apexcharts'), { ssr: false });
+
+interface DailyStatsData {
+  date: string;
+  work_minutes: number;
+  questions_answered: number;
+  topic: string | null;
+  lesson_name: string | null;
 }
 
 export default function DashboardPage() {
-  const { user, logout, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  const [formData, setFormData] = useState<DailyStatsForm>({
-    work_hours: '',
-    questions_answered: '',
-    topics_studied: '',
+  const [stats, setStats] = useState({
+    dailyStats: null as any,
+    totalBooks: 0,
+    totalPages: 0,
+    totalGoingOut: 0,
+    totalGoingOutHours: 0,
+    totalTopicTracking: 0,
+    totalStudyHours: 0,
+    totalQuestions: 0,
   });
-  const [sidebarKey, setSidebarKey] = useState(0);
+  const [chartData, setChartData] = useState<DailyStatsData[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
     if (!loading && !isAuthenticated) {
@@ -35,56 +71,182 @@ export default function DashboardPage() {
     }
   }, [loading, isAuthenticated, router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  useEffect(() => {
+    if (user) {
+      fetchAllStats();
+    }
+  }, [user]);
 
-  const handleSaveStats = async () => {
-    setIsSaving(true);
+  const fetchAllStats = async () => {
+    setLoadingStats(true);
     try {
-      const response = await fetch('/api/students/daily-stats', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          work_hours: parseFloat(formData.work_hours) || 0,
-          questions_answered: parseInt(formData.questions_answered) || 0,
-          topics_studied: formData.topics_studied || null,
-        }),
-      });
+      // Fetch daily stats
+      const dailyStatsRes = await fetch('/api/students/daily-stats?today=true');
+      const dailyStats = dailyStatsRes.ok ? await dailyStatsRes.json() : null;
 
-      if (response.ok) {
-        setMessage({ type: 'success', text: 'Günlük istatistikler başarıyla kaydedildi' });
-        setFormData({
-          work_hours: '',
-          questions_answered: '',
-          topics_studied: '',
-        });
-        setShowStatsModal(false);
-        setSidebarKey((prev) => prev + 1);
-        setTimeout(() => setMessage({ type: '', text: '' }), 3000);
-      } else {
-        setMessage({ type: 'error', text: 'İstatistikler kaydedilirken hata oluştu' });
-      }
+      // Fetch last 30 days for charts
+      const endDate = new Date().toISOString().split('T')[0];
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 30);
+      const startDateStr = startDate.toISOString().split('T')[0];
+      
+      const chartDataRes = await fetch(
+        `/api/students/daily-stats?start_date=${startDateStr}&end_date=${endDate}`
+      );
+      const chartDataResponse = chartDataRes.ok ? await chartDataRes.json() : { stats: [], uniqueTopics: 0 };
+      // Handle both new format (with stats and uniqueTopics) and old format (direct array)
+      const chartDataArray = Array.isArray(chartDataResponse) ? chartDataResponse : (chartDataResponse.stats || []);
+      const uniqueTopics = chartDataResponse.uniqueTopics || 0;
+      
+      // Process chart data
+      const processedData = (Array.isArray(chartDataArray) ? chartDataArray : []).map((item: any) => {
+        const workMinutes = Number(item.work_minutes) || 0;
+        const questionsAnswered = Number(item.questions_answered) || 0;
+        return {
+          date: new Date(item.date).toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' }),
+          fullDate: item.date,
+          work_minutes: workMinutes,
+          work_hours: (workMinutes / 60).toFixed(1),
+          questions_answered: questionsAnswered,
+          topic: item.topic || '',
+          lesson_name: item.lesson_name || '',
+        };
+      }).sort((a: any, b: any) => 
+        new Date(a.fullDate).getTime() - new Date(b.fullDate).getTime()
+      );
+      
+      setChartData(processedData);
+
+      // Fetch books
+      const booksRes = await fetch('/api/books');
+      const books = booksRes.ok ? await booksRes.json() : [];
+      const totalPages = books.reduce((sum: number, b: any) => sum + (b.pages_read || 0), 0);
+      const totalBooks = new Set(books.map((b: any) => b.book_title)).size;
+
+      // Fetch going out
+      const goingOutRes = await fetch('/api/going-out');
+      const goingOut = goingOutRes.ok ? await goingOutRes.json() : [];
+      const totalGoingOutHours = goingOut.reduce((sum: number, g: any) => sum + (g.duration_hours || 0), 0);
+
+      // Calculate stats from daily_stats (günlük çalışma tablosu)
+      const dataArray = Array.isArray(chartDataArray) ? chartDataArray : [];
+      const totalWorkMinutes = dataArray.reduce((sum: number, item: any) => sum + (Number(item.work_minutes) || 0), 0);
+      const totalStudyHours = totalWorkMinutes / 60;
+      const totalQuestions = dataArray.reduce((sum: number, item: any) => sum + (Number(item.questions_answered) || 0), 0);
+      // Use uniqueTopics from API response, or calculate from data if not available
+      const uniqueTopicsCount = uniqueTopics > 0 ? uniqueTopics : new Set(dataArray.filter((item: any) => item.topic_id).map((item: any) => item.topic_id)).size;
+
+      setStats({
+        dailyStats,
+        totalBooks,
+        totalPages,
+        totalGoingOut: goingOut.length,
+        totalGoingOutHours,
+        totalTopicTracking: uniqueTopicsCount,
+        totalStudyHours,
+        totalQuestions,
+      });
     } catch (error) {
-      console.error('Error saving stats:', error);
-      setMessage({ type: 'error', text: 'Bir hata oluştu' });
+      console.error('Error fetching stats:', error);
     } finally {
-      setIsSaving(false);
+      setLoadingStats(false);
     }
   };
+
+  // Calculate motivation metrics
+  const calculateMotivation = () => {
+    const last7Days = chartData.slice(-7);
+    const last7DaysMinutes = last7Days.reduce((sum, d) => sum + d.work_minutes, 0);
+    const last7DaysQuestions = last7Days.reduce((sum, d) => sum + d.questions_answered, 0);
+    const avgDailyMinutes = last7DaysMinutes / 7;
+    const avgDailyQuestions = last7DaysQuestions / 7;
+    
+    const totalMinutes = chartData.reduce((sum, d) => sum + d.work_minutes, 0);
+    const totalQuestions = chartData.reduce((sum, d) => sum + d.questions_answered, 0);
+    const activeDays = chartData.filter(d => d.work_minutes > 0 || d.questions_answered > 0).length;
+    const consistency = chartData.length > 0 ? (activeDays / chartData.length) * 100 : 0;
+
+    // Streak calculation
+    let currentStreak = 0;
+    const today = new Date().toISOString().split('T')[0];
+    for (let i = chartData.length - 1; i >= 0; i--) {
+      const item = chartData[i];
+      if (item.work_minutes > 0 || item.questions_answered > 0) {
+        currentStreak++;
+      } else {
+        break;
+      }
+    }
+
+    return {
+      last7DaysMinutes,
+      last7DaysQuestions,
+      avgDailyMinutes,
+      avgDailyQuestions,
+      totalMinutes,
+      totalQuestions,
+      activeDays,
+      consistency,
+      currentStreak,
+    };
+  };
+
+  const motivation = calculateMotivation();
+  const totalHours = Math.floor(motivation.totalMinutes / 60);
+  const totalRemainingMinutes = motivation.totalMinutes % 60;
+
+  // Get top performing days
+  const topDays = [...chartData]
+    .sort((a, b) => (b.work_minutes + b.questions_answered * 10) - (a.work_minutes + a.questions_answered * 10))
+    .slice(0, 3);
+
+  // Motivation message
+  const getMotivationMessage = () => {
+    if (motivation.currentStreak >= 7) {
+      return { 
+        message: 'Harika! 7 günlük seri devam ediyor! 🔥', 
+        icon: Flame, 
+        color: 'text-red-600' 
+      };
+    } else if (motivation.currentStreak >= 3) {
+      return { 
+        message: 'Güzel gidiyor! Seri devam ediyor! 💪', 
+        icon: Zap, 
+        color: 'text-yellow-600' 
+      };
+    } else if (motivation.consistency >= 70) {
+      return { 
+        message: 'Tutarlı çalışma gösteriyorsun! 🌟', 
+        icon: Award, 
+        color: 'text-blue-600' 
+      };
+    } else if (motivation.consistency >= 50) {
+      return { 
+        message: 'İyi gidiyorsun, daha fazla çalışabilirsin! 📚', 
+        icon: TrendingUp, 
+        color: 'text-green-600' 
+      };
+    } else {
+      return { 
+        message: 'Başlamak için bugün mükemmel bir gün! 🚀', 
+        icon: Target, 
+        color: 'text-purple-600' 
+      };
+    }
+  };
+
+  const motivationMsg = getMotivationMessage();
+  const MotivationIcon = motivationMsg.icon;
+
+  // Chart colors
+  const COLORS = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'];
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Yükleniyor...</p>
+          <p className="text-gray-800">Yükleniyor...</p>
         </div>
       </div>
     );
@@ -94,219 +256,663 @@ export default function DashboardPage() {
     return null;
   }
 
+  const today = new Date().toLocaleDateString('tr-TR', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+
+  const todayStats = stats.dailyStats;
+  const todayMinutes = todayStats?.work_minutes || 0;
+  const todayHours = Math.floor(todayMinutes / 60);
+  const todayRemainingMinutes = todayMinutes % 60;
+
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <Sidebar key={sidebarKey} onAddStats={() => setShowStatsModal(true)} />
-
-      {/* Main Content */}
-      <div className="flex-1">
-        {/* Header */}
-        <header className="bg-white shadow-md sticky top-16 z-40">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Öğrenci Takip Sistemi</h1>
-              <p className="text-gray-600 text-sm">Dashboard</p>
+    <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
+      <Navbar />
+      <div className="flex overflow-x-hidden w-full max-w-full">
+        <Sidebar />
+        <div className="flex-1 md:ml-64 w-full max-w-full overflow-x-hidden">
+          <main className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-gray-800 mt-2 flex items-center gap-2">
+                <Calendar size={18} />
+                {today}
+              </p>
             </div>
-            <div className="text-right">
-              <p className="font-medium text-gray-900">{user.name}</p>
-              <p className="text-sm text-gray-600">{user.email}</p>
+
+            {/* Motivation Section */}
+            <Card className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <div className="bg-white rounded-full p-4 shadow-lg">
+                      <MotivationIcon className={motivationMsg.color} size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-gray-900">{motivationMsg.message}</h3>
+                      <div className="flex gap-4 mt-2 text-sm">
+                        <span className="text-gray-700">
+                          <span className="font-semibold">Seri:</span> {motivation.currentStreak} gün
+                        </span>
+                        <span className="text-gray-700">
+                          <span className="font-semibold">Tutarlılık:</span> {motivation.consistency.toFixed(0)}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-white rounded-lg p-3 shadow">
+                      <p className="text-xs text-gray-600">Son 7 Gün</p>
+                      <p className="text-lg font-bold text-blue-600">
+                        {Math.floor(motivation.last7DaysMinutes / 60)}s {motivation.last7DaysMinutes % 60}dk
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 shadow">
+                      <p className="text-xs text-gray-600">Ortalama/Gün</p>
+                      <p className="text-lg font-bold text-green-600">
+                        {Math.floor(motivation.avgDailyMinutes / 60)}s {Math.floor(motivation.avgDailyMinutes % 60)}dk
+                      </p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 shadow">
+                      <p className="text-xs text-gray-600">Toplam Soru</p>
+                      <p className="text-lg font-bold text-purple-600">{motivation.totalQuestions}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Today's Stats */}
+            {todayStats && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Card className="border-l-4 border-l-blue-600">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-800 text-sm font-medium">Bugünkü Çalışma</p>
+                        <p className="text-3xl font-bold text-blue-600 mt-2">
+                          {todayHours > 0 ? `${todayHours}s ` : ''}{todayRemainingMinutes}dk
+                        </p>
+                      </div>
+                      <Clock className="text-blue-500" size={48} />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-green-600">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-800 text-sm font-medium">Çözülen Sorular</p>
+                        <p className="text-3xl font-bold text-green-600 mt-2">
+                          {todayStats.questions_answered || 0}
+                        </p>
+                        <p className="text-gray-800 text-xs mt-1">soru</p>
+                      </div>
+                      <Target className="text-green-500" size={48} />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="border-l-4 border-l-purple-600">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-gray-800 text-sm font-medium">Çalışılan Konu</p>
+                        <p className="text-lg font-semibold text-purple-600 mt-2 line-clamp-2">
+                          {todayStats.lesson_name && todayStats.topic 
+                            ? `${todayStats.lesson_name} - ${todayStats.topic}`
+                            : 'Henüz konu eklenmedi'}
+                        </p>
+                      </div>
+                      <BookOpen className="text-purple-500" size={48} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* ApexCharts - Last 7 Days + Next 3 Days */}
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle>Son 7 Gün ve Sonraki 3 Gün - Çalışma Süresi ve Soru Sayısı</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {(() => {
+                  // Get last 7 days data
+                  const today = new Date();
+                  const last7DaysData: any[] = [];
+                  const next3DaysData: any[] = [];
+                  
+                  // Last 7 days (including today)
+                  for (let i = 6; i >= 0; i--) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() - i);
+                    const dateStr = date.toISOString().split('T')[0];
+                    // Find matching data - handle both string and date formats
+                    const found = chartData.find(d => {
+                      const dataDate = typeof d.fullDate === 'string' ? d.fullDate : new Date(d.fullDate).toISOString().split('T')[0];
+                      return dataDate === dateStr;
+                    });
+                    last7DaysData.push({
+                      date: date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric', weekday: 'short' }),
+                      work_minutes: Number(found?.work_minutes) || 0,
+                      questions_answered: Number(found?.questions_answered) || 0,
+                    });
+                  }
+                  
+                  // Next 3 days
+                  for (let i = 1; i <= 3; i++) {
+                    const date = new Date(today);
+                    date.setDate(date.getDate() + i);
+                    next3DaysData.push({
+                      date: date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric', weekday: 'short' }),
+                      work_minutes: 0,
+                      questions_answered: 0,
+                    });
+                  }
+                  
+                  const combinedData = [...last7DaysData, ...next3DaysData];
+                  const categories = combinedData.map(d => d.date);
+                  const workMinutesData = combinedData.map(d => d.work_minutes);
+                  const questionsData = combinedData.map(d => d.questions_answered);
+                  
+                  const chartOptions: any = {
+                    chart: {
+                      type: 'bar',
+                      height: 400,
+                      toolbar: {
+                        show: true,
+                      },
+                      zoom: {
+                        enabled: false,
+                      },
+                    },
+                    plotOptions: {
+                      bar: {
+                        horizontal: false,
+                        columnWidth: '60%',
+                        borderRadius: 8,
+                        borderRadiusApplication: 'end',
+                        dataLabels: {
+                          position: 'top',
+                        },
+                      },
+                    },
+                    dataLabels: {
+                      enabled: true,
+                      formatter: (val: number, opts: any) => {
+                        if (opts.seriesIndex === 0) {
+                          // Work minutes - show as hours:minutes
+                          if (val === 0) return '';
+                          const hours = Math.floor(val / 60);
+                          const minutes = val % 60;
+                          return hours > 0 ? `${hours}s ${minutes}dk` : minutes > 0 ? `${minutes}dk` : '';
+                        }
+                        return val > 0 ? val.toString() : '';
+                      },
+                      offsetY: -20,
+                      style: {
+                        fontSize: '11px',
+                        colors: ['#374151'],
+                        fontWeight: 600,
+                      },
+                    },
+                    stroke: {
+                      show: true,
+                      width: 2,
+                      colors: ['transparent'],
+                    },
+                    xaxis: {
+                      categories,
+                      labels: {
+                        style: {
+                          colors: '#374151',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        },
+                      },
+                    },
+                    yaxis: [
+                        {
+                          title: {
+                            text: 'Çalışma Süresi (Dakika)',
+                            style: {
+                              color: '#3b82f6',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                            },
+                          },
+                          labels: {
+                            style: {
+                              colors: '#374151',
+                            },
+                            formatter: (val: number) => {
+                              const hours = Math.floor(val / 60);
+                              const minutes = val % 60;
+                              return hours > 0 ? `${hours}s ${minutes}dk` : `${minutes}dk`;
+                            },
+                          },
+                        },
+                        {
+                          opposite: true,
+                          title: {
+                            text: 'Soru Sayısı',
+                            style: {
+                              color: '#10b981',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                            },
+                          },
+                          labels: {
+                            style: {
+                              colors: '#374151',
+                            },
+                          },
+                        },
+                      ],
+                    fill: {
+                      opacity: 1,
+                      type: 'gradient',
+                      gradient: {
+                        shade: 'light',
+                        type: 'vertical',
+                        shadeIntensity: 0.25,
+                        gradientToColors: ['#2563eb', '#059669'],
+                        inverseColors: false,
+                        opacityFrom: 0.9,
+                        opacityTo: 0.6,
+                        stops: [0, 100],
+                      },
+                    },
+                    tooltip: {
+                      y: {
+                        formatter: (val: number, opts: any) => {
+                          if (opts.seriesIndex === 0) {
+                            const hours = Math.floor(val / 60);
+                            const minutes = val % 60;
+                            return `${hours > 0 ? `${hours}s ` : ''}${minutes}dk`;
+                          }
+                          return `${val} soru`;
+                        },
+                      },
+                    },
+                    legend: {
+                      position: 'top',
+                      horizontalAlign: 'right',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      labels: {
+                        colors: '#374151',
+                      },
+                    },
+                    colors: ['#3b82f6', '#10b981'],
+                    grid: {
+                      borderColor: '#e5e7eb',
+                      strokeDashArray: 4,
+                      xaxis: {
+                        lines: {
+                          show: true,
+                        },
+                      },
+                      yaxis: {
+                        lines: {
+                          show: true,
+                        },
+                      },
+                    },
+                  };
+                  
+                  const chartSeries = [
+                    {
+                      name: 'Çalışma Süresi (dk)',
+                      data: workMinutesData,
+                    },
+                    {
+                      name: 'Çözülen Sorular',
+                      data: questionsData,
+                    },
+                  ];
+                  
+                  return (
+                    <div className="w-full">
+                      <Chart
+                        options={chartOptions}
+                        series={chartSeries}
+                        type="bar"
+                        height={400}
+                      />
+                    </div>
+                  );
+                })()}
+              </CardContent>
+            </Card>
+
+            {/* Charts Section */}
+            {chartData.length > 0 && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Work Minutes Line Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Çalışma Süresi (Son 30 Gün)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient id="colorMinutes" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#fff', 
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}
+                          formatter={(value: any) => {
+                            const hours = Math.floor(value / 60);
+                            const minutes = value % 60;
+                            return `${hours > 0 ? `${hours}s ` : ''}${minutes}dk`;
+                          }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="work_minutes" 
+                          stroke="#3b82f6" 
+                          fillOpacity={1} 
+                          fill="url(#colorMinutes)"
+                          name="Çalışma Süresi"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Questions Bar Chart */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Çözülen Sorular (Son 30 Gün)</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ value: 'Soru', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#fff', 
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}
+                        />
+                        <Bar 
+                          dataKey="questions_answered" 
+                          fill="#10b981"
+                          radius={[8, 8, 0, 0]}
+                          name="Çözülen Sorular"
+                        />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                {/* Combined Line Chart */}
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>Çalışma Süresi ve Soru Sayısı Karşılaştırması</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={350}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="date" 
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          yAxisId="left"
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                        />
+                        <YAxis 
+                          yAxisId="right" 
+                          orientation="right"
+                          stroke="#6b7280"
+                          fontSize={12}
+                          tick={{ fill: '#6b7280' }}
+                          label={{ value: 'Soru', angle: 90, position: 'insideRight', fill: '#6b7280' }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: '#fff', 
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '8px'
+                          }}
+                          formatter={(value: any, name: string) => {
+                            if (name === 'Çalışma Süresi') {
+                              const hours = Math.floor(value / 60);
+                              const minutes = value % 60;
+                              return [`${hours > 0 ? `${hours}s ` : ''}${minutes}dk`, name];
+                            }
+                            return [value, name];
+                          }}
+                        />
+                        <Legend />
+                        <Line 
+                          yAxisId="left"
+                          type="monotone" 
+                          dataKey="work_minutes" 
+                          stroke="#3b82f6" 
+                          strokeWidth={3}
+                          dot={{ fill: '#3b82f6', r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name="Çalışma Süresi (dk)"
+                        />
+                        <Line 
+                          yAxisId="right"
+                          type="monotone" 
+                          dataKey="questions_answered" 
+                          stroke="#10b981" 
+                          strokeWidth={3}
+                          dot={{ fill: '#10b981', r: 4 }}
+                          activeDot={{ r: 6 }}
+                          name="Çözülen Sorular"
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Overall Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <Link href="/dashboard/kitap-okuma">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-blue-600">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Book className="text-blue-600 mx-auto mb-2" size={32} />
+                      <p className="text-gray-800 text-sm font-medium">Okunan Kitap</p>
+                      <p className="text-3xl font-bold text-blue-600 mt-2">{stats.totalBooks}</p>
+                      <p className="text-gray-800 text-xs mt-1">{stats.totalPages} sayfa</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/konu-takip">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-green-600">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Target className="text-green-600 mx-auto mb-2" size={32} />
+                      <p className="text-gray-800 text-sm font-medium">Konu Takip</p>
+                      <p className="text-3xl font-bold text-green-600 mt-2">
+                        {stats.totalTopicTracking}
+                      </p>
+                      <p className="text-gray-800 text-xs mt-1">
+                        {stats.totalStudyHours.toFixed(1)} saat, {stats.totalQuestions} soru
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/disari-cikma">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-purple-600">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <LogOut className="text-purple-600 mx-auto mb-2" size={32} />
+                      <p className="text-gray-800 text-sm font-medium">Dışarı Çıkma</p>
+                      <p className="text-3xl font-bold text-purple-600 mt-2">
+                        {stats.totalGoingOut}
+                      </p>
+                      <p className="text-gray-800 text-xs mt-1">
+                        {stats.totalGoingOutHours.toFixed(1)} saat
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
+              <Link href="/dashboard/gunluk-calisma">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-orange-600">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <TrendingUp className="text-orange-600 mx-auto mb-2" size={32} />
+                      <p className="text-gray-800 text-sm font-medium">Günlük Çalışma</p>
+                      <p className="text-3xl font-bold text-orange-600 mt-2">
+                        {totalHours > 0 ? `${totalHours}s ` : ''}{totalRemainingMinutes}dk
+                      </p>
+                      <p className="text-gray-800 text-xs mt-1">toplam</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
-          </div>
-        </header>
 
-        {/* Alert Messages */}
-        {message.text && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
-            <Alert type={message.type as 'success' | 'error' | 'info' | 'warning'}>
-              <div className="flex justify-between items-center">
-                <span>{message.text}</span>
-                <button onClick={() => setMessage({ type: '', text: '' })} className="ml-4">
-                  ✕
-                </button>
-              </div>
-            </Alert>
-          </div>
-        )}
+            {/* Top Performing Days */}
+            {topDays.length > 0 && (
+              <Card className="mb-8">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="text-yellow-600" size={24} />
+                    En İyi Performans Günleri
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {topDays.map((day, index) => {
+                      const hours = Math.floor(day.work_minutes / 60);
+                      const minutes = day.work_minutes % 60;
+                      return (
+                        <div
+                          key={index}
+                          className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-800">{day.date}</span>
+                            <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                              #{index + 1}
+                            </span>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Çalışma:</span>{' '}
+                              {hours > 0 ? `${hours}s ` : ''}{minutes}dk
+                            </p>
+                            <p className="text-sm text-gray-700">
+                              <span className="font-medium">Soru:</span> {day.questions_answered}
+                            </p>
+                            {day.lesson_name && (
+                              <p className="text-xs text-gray-600 mt-2">
+                                {day.lesson_name} {day.topic && `- ${day.topic}`}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Stats Cards */}
+            {/* Quick Actions */}
             <Card>
+              <CardHeader>
+                <CardTitle>Hızlı İşlemler</CardTitle>
+              </CardHeader>
               <CardContent>
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm font-medium">Devam Durumu</p>
-                  <p className="text-4xl font-bold text-blue-600 mt-2">%92</p>
-                  <p className="text-gray-600 text-xs mt-1">Bu ayın devam oranı</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <Link
+                    href="/dashboard/gunluk-calisma"
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
+                  >
+                    <Clock className="text-blue-600 mx-auto mb-2" size={24} />
+                    <p className="font-medium text-gray-900">Günlük Çalışma</p>
+                    <p className="text-sm text-gray-800">İstatistikleri güncelle</p>
+                  </Link>
+                  <Link
+                    href="/dashboard/konu-takip"
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
+                  >
+                    <Target className="text-green-600 mx-auto mb-2" size={24} />
+                    <p className="font-medium text-gray-900">Konu Takip</p>
+                    <p className="text-sm text-gray-800">Yeni konu ekle</p>
+                  </Link>
+                  <Link
+                    href="/dashboard/kitap-okuma"
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
+                  >
+                    <Book className="text-blue-600 mx-auto mb-2" size={24} />
+                    <p className="font-medium text-gray-900">Kitap Okuma</p>
+                    <p className="text-sm text-gray-800">Yeni kayıt ekle</p>
+                  </Link>
+                  <Link
+                    href="/dashboard/ayarlar"
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
+                  >
+                    <TrendingUp className="text-purple-600 mx-auto mb-2" size={24} />
+                    <p className="font-medium text-gray-900">Ayarlar</p>
+                    <p className="text-sm text-gray-800">Konu içe aktar</p>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm font-medium">Kurs Sayısı</p>
-                  <p className="text-4xl font-bold text-green-600 mt-2">4</p>
-                  <p className="text-gray-600 text-xs mt-1">Kayıtlı kursa devam ediyorsunuz</p>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent>
-                <div className="text-center">
-                  <p className="text-gray-600 text-sm font-medium">Devamsızlık</p>
-                  <p className="text-4xl font-bold text-red-600 mt-2">2</p>
-                  <p className="text-gray-600 text-xs mt-1">Bu dönem devamsızlık sayısı</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Courses Section */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Kayıtlı Kurslar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Yazılım Geliştirme</h3>
-                      <p className="text-sm text-gray-600">Ders Kodu: CSC101</p>
-                    </div>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                      Aktif
-                    </span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-600">Devam</p>
-                      <p className="text-lg font-semibold text-green-600">24</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Devamsız</p>
-                      <p className="text-lg font-semibold text-red-600">2</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Oran</p>
-                      <p className="text-lg font-semibold text-blue-600">92%</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-900">Veri Tabanları</h3>
-                      <p className="text-sm text-gray-600">Ders Kodu: CSC201</p>
-                    </div>
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                      Aktif
-                    </span>
-                  </div>
-                  <div className="mt-3 grid grid-cols-3 gap-4">
-                    <div>
-                      <p className="text-xs text-gray-600">Devam</p>
-                      <p className="text-lg font-semibold text-green-600">25</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Devamsız</p>
-                      <p className="text-lg font-semibold text-red-600">1</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600">Oran</p>
-                      <p className="text-lg font-semibold text-blue-600">96%</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </main>
-      </div>
-
-      {/* Daily Stats Modal */}
-      {showStatsModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader className="flex justify-between items-center">
-              <CardTitle>Günlük İstatistikler</CardTitle>
-              <button
-                onClick={() => setShowStatsModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X size={24} />
-              </button>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label htmlFor="work_hours" className="block text-sm font-medium text-gray-700 mb-2">
-                  Çalışma Süresi (saat)
-                </label>
-                <Input
-                  id="work_hours"
-                  type="number"
-                  name="work_hours"
-                  step="0.5"
-                  min="0"
-                  value={formData.work_hours}
-                  onChange={handleInputChange}
-                  placeholder="Örn: 2.5"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="questions_answered" className="block text-sm font-medium text-gray-700 mb-2">
-                  Yanıtlanan Sorular (sayı)
-                </label>
-                <Input
-                  id="questions_answered"
-                  type="number"
-                  name="questions_answered"
-                  min="0"
-                  value={formData.questions_answered}
-                  onChange={handleInputChange}
-                  placeholder="Örn: 15"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="topics_studied" className="block text-sm font-medium text-gray-700 mb-2">
-                  Çalışılan Konular
-                </label>
-                <Input
-                  id="topics_studied"
-                  type="text"
-                  name="topics_studied"
-                  value={formData.topics_studied}
-                  onChange={handleInputChange}
-                  placeholder="Örn: JavaScript, React, Node.js"
-                />
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleSaveStats}
-                  disabled={isSaving}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
-                >
-                  {isSaving ? 'Kaydediliyor...' : 'Kaydet'}
-                </Button>
-                <Button
-                  onClick={() => setShowStatsModal(false)}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  İptal
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          </main>
         </div>
-      )}
+      </div>
     </div>
   );
 }

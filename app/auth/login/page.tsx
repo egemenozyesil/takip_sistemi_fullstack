@@ -37,11 +37,11 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 overflow-x-hidden w-full max-w-full">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Giriş Yap</CardTitle>
-          <p className="text-gray-600 text-sm mt-2">Takip sistemi hesabınıza giriş yapın</p>
+          <p className="text-gray-800 text-sm mt-2">Takip sistemi hesabınıza giriş yapın</p>
         </CardHeader>
         <CardContent>
           {error && <Alert type="error">{error}</Alert>}
@@ -72,7 +72,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-800 mt-4">
             Hesabınız yok mu?{' '}
             <Link href="/auth/register" className="text-blue-600 hover:underline">
               Kaydol

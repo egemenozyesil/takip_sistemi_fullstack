@@ -53,11 +53,11 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 overflow-x-hidden w-full max-w-full">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Öğrenci Kaydı</CardTitle>
-          <p className="text-gray-600 text-sm mt-2">Takip sistemine katılmak için kaydolun</p>
+          <p className="text-gray-800 text-sm mt-2">Takip sistemine katılmak için kaydolun</p>
         </CardHeader>
         <CardContent>
           {error && <Alert type="error">{error}</Alert>}
@@ -135,7 +135,7 @@ export default function RegisterPage() {
             </Button>
           </form>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-800 mt-4">
             Zaten hesabınız var mı?{' '}
             <Link href="/auth/login" className="text-blue-600 hover:underline">
               Giriş yapın
