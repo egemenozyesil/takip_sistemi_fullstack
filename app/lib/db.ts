@@ -308,6 +308,20 @@ export function initializeDb() {
     )
   `);
 
+  // Game sessions table
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS game_sessions (
+      id TEXT PRIMARY KEY,
+      student_id TEXT NOT NULL,
+      game_name TEXT NOT NULL,
+      duration_minutes INTEGER DEFAULT 0,
+      play_date TEXT NOT NULL,
+      notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (student_id) REFERENCES students(id)
+    )
+  `);
+
 }
 
 export default getDb;

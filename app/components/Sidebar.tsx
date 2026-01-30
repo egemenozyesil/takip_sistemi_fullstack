@@ -12,7 +12,8 @@ import {
   Settings,
   User,
   Clock,
-  FileText
+  FileText,
+  Gamepad2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ const navigationItems = [
   { href: '/dashboard/konu-takip', label: 'Konu Takip', icon: Target },
   { href: '/dashboard/konular', label: 'Konular', icon: FileText },
   { href: '/dashboard/kitap-okuma', label: 'Kitap Okuma', icon: Book },
+  { href: '/dashboard/oyun-takip', label: 'Oyun Takip', icon: Gamepad2 },
   { href: '/dashboard/disari-cikma', label: 'Dışarı Çıkma', icon: LogOut },
   { href: '/dashboard/ayarlar', label: 'Ayarlar', icon: Settings },
 ];

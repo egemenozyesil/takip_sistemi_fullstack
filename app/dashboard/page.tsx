@@ -17,7 +17,8 @@ import {
   Award,
   Zap,
   Flame,
-  Trophy
+  Trophy,
+  Gamepad2
 } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -62,6 +63,9 @@ export default function DashboardPage() {
     totalTopicTracking: 0,
     totalStudyHours: 0,
     totalQuestions: 0,
+    totalGameSessions: 0,
+    totalGameMinutes: 0,
+    totalGames: 0,
   });
   const [chartData, setChartData] = useState<DailyStatsData[]>([]);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -129,6 +133,12 @@ export default function DashboardPage() {
       const goingOut = goingOutRes.ok ? await goingOutRes.json() : [];
       const totalGoingOutHours = goingOut.reduce((sum: number, g: any) => sum + (g.duration_hours || 0), 0);
 
+      // Fetch games
+      const gamesRes = await fetch('/api/games');
+      const games = gamesRes.ok ? await gamesRes.json() : [];
+      const totalGameMinutes = games.reduce((sum: number, g: any) => sum + (g.duration_minutes || 0), 0);
+      const totalGames = new Set(games.map((g: any) => g.game_name)).size;
+
       // Calculate stats from daily_stats (günlük çalışma tablosu)
       const dataArray = Array.isArray(chartDataArray) ? chartDataArray : [];
       const totalWorkMinutes = dataArray.reduce((sum: number, item: any) => sum + (Number(item.work_minutes) || 0), 0);
@@ -146,6 +156,9 @@ export default function DashboardPage() {
         totalTopicTracking: uniqueTopicsCount,
         totalStudyHours,
         totalQuestions,
+        totalGameSessions: games.length,
+        totalGameMinutes,
+        totalGames,
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -758,7 +771,7 @@ export default function DashboardPage() {
             )}
 
             {/* Overall Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
               <Link href="/dashboard/kitap-okuma">
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-blue-600">
                   <CardContent className="pt-6">
@@ -820,6 +833,21 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
               </Link>
+
+              <Link href="/dashboard/oyun-takip">
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer border-t-4 border-t-purple-600">
+                  <CardContent className="pt-6">
+                    <div className="text-center">
+                      <Gamepad2 className="text-purple-600 mx-auto mb-2" size={32} />
+                      <p className="text-gray-800 text-sm font-medium">Oyun Oynama</p>
+                      <p className="text-3xl font-bold text-purple-600 mt-2">
+                        {Math.floor(stats.totalGameMinutes / 60)}s {stats.totalGameMinutes % 60}dk
+                      </p>
+                      <p className="text-gray-800 text-xs mt-1">{stats.totalGames} oyun, {stats.totalGameSessions} kayıt</p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
             </div>
 
             {/* Top Performing Days */}
@@ -875,7 +903,7 @@ export default function DashboardPage() {
                 <CardTitle>Hızlı İşlemler</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                   <Link
                     href="/dashboard/gunluk-calisma"
                     className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
@@ -907,6 +935,14 @@ export default function DashboardPage() {
                     <TrendingUp className="text-purple-600 mx-auto mb-2" size={24} />
                     <p className="font-medium text-gray-900">Ayarlar</p>
                     <p className="text-sm text-gray-800">Konu içe aktar</p>
+                  </Link>
+                  <Link
+                    href="/dashboard/oyun-takip"
+                    className="p-4 border rounded-lg hover:bg-gray-50 transition text-center hover:shadow-md"
+                  >
+                    <Gamepad2 className="text-purple-600 mx-auto mb-2" size={24} />
+                    <p className="font-medium text-gray-900">Oyun Takip</p>
+                    <p className="text-sm text-gray-800">Oyun oynama ekle</p>
                   </Link>
                 </div>
               </CardContent>
