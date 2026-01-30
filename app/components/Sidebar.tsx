@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth/AuthContext';
 import { 
   LayoutDashboard, 
-  BookOpen, 
   Target, 
   Book, 
   LogOut, 
@@ -13,7 +12,8 @@ import {
   User,
   Clock,
   FileText,
-  Gamepad2
+  Gamepad2,
+  MapPin
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -27,13 +27,14 @@ const navigationItems = [
   { href: '/dashboard/konular', label: 'Konular', icon: FileText },
   { href: '/dashboard/kitap-okuma', label: 'Kitap Okuma', icon: Book },
   { href: '/dashboard/oyun-takip', label: 'Oyun Takip', icon: Gamepad2 },
-  { href: '/dashboard/disari-cikma', label: 'Dışarı Çıkma', icon: LogOut },
+  { href: '/dashboard/disari-cikma', label: 'Dışarı Çıkma', icon: MapPin },
   { href: '/dashboard/ayarlar', label: 'Ayarlar', icon: Settings },
 ];
 
 export default function Sidebar({ onAddStats }: SidebarProps) {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   return (
     <aside className="hidden md:flex w-64 bg-gray-50 border-r border-gray-200 flex-col h-[calc(100vh-4rem)] fixed top-16 left-0 z-40">
@@ -80,6 +81,16 @@ export default function Sidebar({ onAddStats }: SidebarProps) {
           </div>
           <User size={18} className="text-gray-700" />
         </Link>
+        <button
+          onClick={async () => {
+            await logout();
+            router.push('/auth/login');
+          }}
+          className="mt-2 w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium"
+        >
+          <LogOut size={20} />
+          <span>Çıkış Yap</span>
+        </button>
       </div>
     </aside>
   );

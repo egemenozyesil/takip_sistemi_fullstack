@@ -316,8 +316,8 @@ export default function ProfilePage() {
                       await logout();
                       router.push('/auth/login');
                     }}
-                    variant="danger"
-                    className="w-full"
+                    variant="destructive"
+                    className="w-full bg-red-600 hover:bg-red-700"
                   >
                     <LogOut size={18} className="mr-2" />
                     Çıkış Yap

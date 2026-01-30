@@ -13,9 +13,13 @@ import {
   X, 
   BookOpen,
   Menu,
-  Bell,
   Settings,
-  ChevronDown
+  Clock,
+  Target,
+  FileText,
+  Book,
+  Gamepad2,
+  MapPin
 } from 'lucide-react';
 
 interface SearchResult {
@@ -32,19 +36,14 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
         setShowResults(false);
-      }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
-        setShowUserMenu(false);
       }
     };
 
@@ -202,68 +201,21 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* User Menu - Desktop */}
+          {/* User - Desktop: tıklanınca profil sayfasına gider */}
           <div className="hidden md:flex items-center gap-3">
             {user && (
-              <div className="relative" ref={userMenuRef}>
-                <button
-                  onClick={() => {
-                    console.log('User menu clicked, current state:', showUserMenu);
-                    setShowUserMenu(!showUserMenu);
-                  }}
-                  className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200 group"
-                >
-                  <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm group-hover:bg-white/30 transition-colors">
-                    {user.name?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                  <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium text-white">{user.name}</p>
-                    <p className="text-xs text-white/70">{user.email}</p>
-                  </div>
-                  <ChevronDown 
-                    size={16} 
-                    className={`text-white/70 transition-transform duration-200 ${showUserMenu ? 'rotate-180' : ''}`} 
-                  />
-                </button>
-
-                {/* User Dropdown Menu */}
-                {showUserMenu && (
-                  <div className="absolute right-0 bottom-full mb-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-600 truncate">{user.email}</p>
-                    </div>
-                    <Link
-                      href="/dashboard/profile"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-gray-800 hover:bg-blue-50 transition-colors"
-                    >
-                      <User size={18} className="text-gray-600" />
-                      <span>Profil</span>
-                    </Link>
-                    <Link
-                      href="/dashboard/ayarlar"
-                      onClick={() => setShowUserMenu(false)}
-                      className="flex items-center gap-3 px-4 py-2 text-gray-800 hover:bg-blue-50 transition-colors"
-                    >
-                      <Settings size={18} className="text-gray-600" />
-                      <span>Ayarlar</span>
-                    </Link>
-                    <div className="border-t border-gray-200 my-1"></div>
-                    <button
-                      onClick={() => {
-                        console.log('Logout clicked');
-                        setShowUserMenu(false);
-                        handleLogout();
-                      }}
-                      className="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut size={18} />
-                      <span>Çıkış Yap</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+              <Link
+                href="/dashboard/profile"
+                className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200 group"
+              >
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm group-hover:bg-white/30 transition-colors">
+                  {user.name?.charAt(0).toUpperCase() || 'U'}
+                </div>
+                <div className="hidden lg:block text-left">
+                  <p className="text-sm font-medium text-white">{user.name}</p>
+                  <p className="text-xs text-white/70">{user.email}</p>
+                </div>
+              </Link>
             )}
           </div>
 
@@ -332,12 +284,52 @@ export default function Navbar() {
                 <span>Dashboard</span>
               </Link>
               <Link
-                href="/dashboard/profile"
+                href="/dashboard/gunluk-calisma"
                 onClick={() => setShowMobileMenu(false)}
                 className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
               >
-                <User size={20} />
-                <span>Profil</span>
+                <Clock size={20} />
+                <span>Günlük Çalışma</span>
+              </Link>
+              <Link
+                href="/dashboard/konu-takip"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <Target size={20} />
+                <span>Konu Takip</span>
+              </Link>
+              <Link
+                href="/dashboard/konular"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <FileText size={20} />
+                <span>Konular</span>
+              </Link>
+              <Link
+                href="/dashboard/kitap-okuma"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <Book size={20} />
+                <span>Kitap Okuma</span>
+              </Link>
+              <Link
+                href="/dashboard/oyun-takip"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <Gamepad2 size={20} />
+                <span>Oyun Takip</span>
+              </Link>
+              <Link
+                href="/dashboard/disari-cikma"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <MapPin size={20} />
+                <span>Dışarı Çıkma</span>
               </Link>
               <Link
                 href="/dashboard/ayarlar"
@@ -347,13 +339,21 @@ export default function Navbar() {
                 <Settings size={20} />
                 <span>Ayarlar</span>
               </Link>
+              <Link
+                href="/dashboard/profile"
+                onClick={() => setShowMobileMenu(false)}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+              >
+                <User size={20} />
+                <span>Profil</span>
+              </Link>
               <div className="border-t border-white/20 my-2"></div>
               <button
                 onClick={() => {
                   setShowMobileMenu(false);
                   handleLogout();
                 }}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-300 hover:bg-red-500/20 transition-colors"
               >
                 <LogOut size={20} />
                 <span>Çıkış Yap</span>
