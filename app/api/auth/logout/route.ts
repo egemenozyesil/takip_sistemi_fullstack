@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { handleApiError } from '@/app/lib/apiError';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -19,10 +20,7 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: 'Çıkış işlemi başarısız' },
-      { status: 400 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'auth/logout POST', 'Çıkış işlemi başarısız', 400);
   }
 }

@@ -94,7 +94,8 @@ export default function DailyStudyPage() {
       const response = await fetch(url);
       if (response.ok) {
         const data = await response.json();
-        setStats(Array.isArray(data) ? data : [data]);
+        const list = Array.isArray(data) ? data : (data?.stats != null ? data.stats : [data]);
+        setStats(Array.isArray(list) ? list : [list]);
       }
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -187,6 +188,10 @@ export default function DailyStudyPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!id) {
+      setMessage({ type: 'error', text: 'Bu kayıt silinemiyor (geçersiz kayıt)' });
+      return;
+    }
     if (!confirm('Bu kaydı silmek istediğinize emin misiniz?')) return;
 
     try {
@@ -251,7 +256,7 @@ export default function DailyStudyPage() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
       <Navbar />
-      <div className="flex overflow-x-hidden w-full max-w-full">
+      <div className="flex overflow-x-hidden w-full max-w-full pt-16">
         <Sidebar />
         <div className="flex-1 md:ml-64 w-full max-w-full overflow-x-hidden">
           <main className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
@@ -273,12 +278,14 @@ export default function DailyStudyPage() {
             </div>
 
             {message && (
-              <Alert type={message.type} className="mb-6">
-                <div className="flex justify-between items-center">
-                  <span>{message.text}</span>
-                  <button onClick={() => setMessage(null)}>✕</button>
-                </div>
-              </Alert>
+              <div className="fixed top-16 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto md:max-w-md z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                <Alert type={message.type} className="shadow-lg">
+                  <div className="flex justify-between items-center">
+                    <span>{message.text}</span>
+                    <button onClick={() => setMessage(null)} className="font-medium">✕</button>
+                  </div>
+                </Alert>
+              </div>
             )}
 
             {/* Stats Cards */}
@@ -366,12 +373,12 @@ export default function DailyStudyPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {stats.map((stat) => {
+                    {stats.map((stat, index) => {
                       const hours = Math.floor((stat.work_minutes || 0) / 60);
                       const minutes = (stat.work_minutes || 0) % 60;
                       return (
                         <div
-                          key={stat.id}
+                          key={stat.id ? `${stat.id}-${index}` : `stat-${index}`}
                           className="border rounded-lg p-4 hover:bg-gray-50 transition"
                         >
                           <div className="flex justify-between items-start">
@@ -379,12 +386,19 @@ export default function DailyStudyPage() {
                               <div className="flex items-center gap-4 text-sm text-gray-800 mb-3">
                                 <span className="flex items-center gap-1">
                                   <Calendar size={16} />
-                                  {new Date(stat.date).toLocaleDateString('tr-TR', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                  })}
+                                  {stat.date
+                                    ? (() => {
+                                        const d = new Date(stat.date);
+                                        return Number.isNaN(d.getTime())
+                                          ? String(stat.date)
+                                          : d.toLocaleDateString('tr-TR', {
+                                              weekday: 'long',
+                                              year: 'numeric',
+                                              month: 'long',
+                                              day: 'numeric'
+                                            });
+                                      })()
+                                    : 'Tarih belirtilmemiş'}
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -450,7 +464,7 @@ export default function DailyStudyPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md">
             <CardHeader className="flex justify-between items-center">
               <CardTitle>Günlük İstatistikler</CardTitle>

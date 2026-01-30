@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDb } from '@/app/lib/db';
+import { handleApiError } from '@/app/lib/apiError';
 import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
     // Only from daily_stats table
     let query = `
       SELECT 
+        MAX(ds.id) as id,
         ds.date,
         ds.topic_id,
         COALESCE(SUM(ds.work_minutes), 0) as work_minutes,
@@ -111,8 +113,7 @@ export async function GET(request: NextRequest) {
       uniqueTopics: uniqueTopicsResult?.unique_topics || 0
     });
   } catch (error) {
-    console.error('Error fetching daily stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'students/daily-stats GET', 'Internal server error', 500);
   }
 }
 
@@ -198,8 +199,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(result);
   } catch (error) {
-    console.error('Error saving daily stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'students/daily-stats POST', 'Internal server error', 500);
   }
 }
 
@@ -243,7 +243,6 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting daily stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'students/daily-stats DELETE', 'Internal server error', 500);
   }
 }

@@ -285,7 +285,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
       <Navbar />
-      <div className="flex overflow-x-hidden w-full max-w-full">
+      <div className="flex overflow-x-hidden w-full max-w-full pt-16">
         <Sidebar />
         <div className="flex-1 md:ml-64 w-full max-w-full overflow-x-hidden">
           <main className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
@@ -436,12 +436,17 @@ export default function DashboardPage() {
                     chart: {
                       type: 'bar',
                       height: 400,
+                      foreColor: '#111827',
                       toolbar: {
                         show: true,
                       },
                       zoom: {
                         enabled: false,
                       },
+                    },
+                    theme: {
+                      mode: 'light',
+                      palette: 'palette1',
                     },
                     plotOptions: {
                       bar: {
@@ -469,7 +474,7 @@ export default function DashboardPage() {
                       offsetY: -20,
                       style: {
                         fontSize: '11px',
-                        colors: ['#374151'],
+                        colors: ['#111827'],
                         fontWeight: 600,
                       },
                     },
@@ -482,7 +487,7 @@ export default function DashboardPage() {
                       categories,
                       labels: {
                         style: {
-                          colors: '#374151',
+                          colors: '#111827',
                           fontSize: '12px',
                           fontWeight: 600,
                         },
@@ -493,14 +498,14 @@ export default function DashboardPage() {
                           title: {
                             text: 'Çalışma Süresi (Dakika)',
                             style: {
-                              color: '#3b82f6',
+                              color: '#111827',
                               fontSize: '13px',
                               fontWeight: 600,
                             },
                           },
                           labels: {
                             style: {
-                              colors: '#374151',
+                              colors: '#111827',
                             },
                             formatter: (val: number) => {
                               const hours = Math.floor(val / 60);
@@ -514,14 +519,14 @@ export default function DashboardPage() {
                           title: {
                             text: 'Soru Sayısı',
                             style: {
-                              color: '#10b981',
+                              color: '#111827',
                               fontSize: '13px',
                               fontWeight: 600,
                             },
                           },
                           labels: {
                             style: {
-                              colors: '#374151',
+                              colors: '#111827',
                             },
                           },
                         },
@@ -541,6 +546,10 @@ export default function DashboardPage() {
                       },
                     },
                     tooltip: {
+                      theme: 'light',
+                      style: {
+                        fontSize: '12px',
+                      },
                       y: {
                         formatter: (val: number, opts: any) => {
                           if (opts.seriesIndex === 0) {
@@ -558,7 +567,11 @@ export default function DashboardPage() {
                       fontSize: '14px',
                       fontWeight: 600,
                       labels: {
-                        colors: '#374151',
+                        colors: '#111827',
+                      },
+                      itemMargin: {
+                        horizontal: 12,
+                        vertical: 4,
                       },
                     },
                     colors: ['#3b82f6', '#10b981'],
@@ -590,7 +603,7 @@ export default function DashboardPage() {
                   ];
                   
                   return (
-                    <div className="w-full">
+                    <div className="w-full text-gray-900" style={{ color: '#111827' }}>
                       <Chart
                         options={chartOptions}
                         series={chartSeries}
@@ -623,21 +636,23 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis 
                           dataKey="date" 
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
                         />
                         <YAxis 
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
-                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
+                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#111827', fontWeight: 600 }}
                         />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: '#fff', 
                             border: '1px solid #e5e7eb',
-                            borderRadius: '8px'
+                            borderRadius: '8px',
+                            color: '#111827',
+                            fontWeight: 600
                           }}
                           formatter={(value: any) => {
                             const hours = Math.floor(value / 60);
@@ -669,21 +684,23 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis 
                           dataKey="date" 
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
                         />
                         <YAxis 
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
-                          label={{ value: 'Soru', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
+                          label={{ value: 'Soru', angle: -90, position: 'insideLeft', fill: '#111827', fontWeight: 600 }}
                         />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: '#fff', 
                             border: '1px solid #e5e7eb',
-                            borderRadius: '8px'
+                            borderRadius: '8px',
+                            color: '#111827',
+                            fontWeight: 600
                           }}
                         />
                         <Bar 
@@ -708,30 +725,32 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                         <XAxis 
                           dataKey="date" 
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
                         />
                         <YAxis 
                           yAxisId="left"
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
-                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
+                          label={{ value: 'Dakika', angle: -90, position: 'insideLeft', fill: '#111827', fontWeight: 600 }}
                         />
                         <YAxis 
                           yAxisId="right" 
                           orientation="right"
-                          stroke="#6b7280"
+                          stroke="#111827"
                           fontSize={12}
-                          tick={{ fill: '#6b7280' }}
-                          label={{ value: 'Soru', angle: 90, position: 'insideRight', fill: '#6b7280' }}
+                          tick={{ fill: '#111827', fontWeight: 600 }}
+                          label={{ value: 'Soru', angle: 90, position: 'insideRight', fill: '#111827', fontWeight: 600 }}
                         />
                         <Tooltip 
                           contentStyle={{ 
                             backgroundColor: '#fff', 
                             border: '1px solid #e5e7eb',
-                            borderRadius: '8px'
+                            borderRadius: '8px',
+                            color: '#111827',
+                            fontWeight: 600
                           }}
                           formatter={(value: any, name: string) => {
                             if (name === 'Çalışma Süresi') {
@@ -742,7 +761,7 @@ export default function DashboardPage() {
                             return [value, name];
                           }}
                         />
-                        <Legend />
+                        <Legend wrapperStyle={{ color: '#111827', fontWeight: 600 }} />
                         <Line 
                           yAxisId="left"
                           type="monotone" 

@@ -120,22 +120,22 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
       <Navbar />
-      <div className="flex overflow-x-hidden w-full max-w-full">
+      <div className="flex overflow-x-hidden w-full max-w-full pt-16">
         <Sidebar />
         <div className="flex-1 md:ml-64 w-full max-w-full overflow-x-hidden">
           <main className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
             {message.text && (
-              <Alert
-                type={message.type as 'success' | 'error' | 'info' | 'warning'}
-                className="mb-6"
-              >
-                <div className="flex justify-between items-center">
-                  <span>{message.text}</span>
-                  <button onClick={() => setMessage({ type: '', text: '' })} className="ml-4">
-                    ✕
-                  </button>
-                </div>
-              </Alert>
+              <div className="fixed top-16 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto md:max-w-md z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                <Alert
+                  type={message.type as 'success' | 'error' | 'info' | 'warning'}
+                  className="shadow-lg"
+                >
+                  <div className="flex justify-between items-center">
+                    <span>{message.text}</span>
+                    <button onClick={() => setMessage({ type: '', text: '' })} className="ml-4 font-medium">✕</button>
+                  </div>
+                </Alert>
+              </div>
             )}
 
             <Card className="mb-6">

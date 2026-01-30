@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDb } from '@/app/lib/db';
+import { handleApiError } from '@/app/lib/apiError';
 import { v4 as uuidv4 } from 'uuid';
 import * as XLSX from 'xlsx';
 
@@ -101,11 +102,7 @@ export async function POST(request: NextRequest) {
       skipped: result.skipped,
       message: `${result.imported} konu başarıyla içe aktarıldı. ${result.skipped} satır atlandı.`
     });
-  } catch (error: any) {
-    console.error('Error importing topics:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'topics/import POST', 'Internal server error', 500);
   }
 }

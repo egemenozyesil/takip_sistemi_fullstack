@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { handleApiError } from '@/app/lib/apiError';
 import * as XLSX from 'xlsx';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -63,11 +64,7 @@ export async function POST(request: NextRequest) {
       preview: previewData.slice(0, 50), // Show first 50 rows in preview
       hasMore: previewData.length > 50,
     });
-  } catch (error: any) {
-    console.error('Error previewing import:', error);
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'topics/import/preview POST', 'Internal server error', 500);
   }
 }

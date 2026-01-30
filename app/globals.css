@@ -24,3 +24,17 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ApexCharts: grafik metinleri her zaman koyu (shadcn/dark mode'dan bağımsız) */
+.apexcharts-legend-text,
+.apexcharts-text,
+.apexcharts-xaxis-label,
+.apexcharts-yaxis-label,
+.apexcharts-datalabel {
+  fill: #111827 !important;
+  color: #111827 !important;
+}
+.apexcharts-tooltip-title,
+.apexcharts-tooltip-text {
+  color: #111827 !important;
+}

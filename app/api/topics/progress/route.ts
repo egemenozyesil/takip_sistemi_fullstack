@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDb } from '@/app/lib/db';
+import { handleApiError } from '@/app/lib/apiError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -51,7 +52,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(topics);
   } catch (error) {
-    console.error('Error fetching topic progress:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'topics/progress GET', 'Internal server error', 500);
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { registerUser } from '@/app/lib/auth';
+import { handleApiError } from '@/app/lib/apiError';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,10 +34,7 @@ export async function POST(request: NextRequest) {
       { message: 'Başarıyla kayıt olundu', user },
       { status: 201 }
     );
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Kayıt işlemi başarısız' },
-      { status: 400 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'auth/register POST', 'Kayıt işlemi başarısız', 400);
   }
 }

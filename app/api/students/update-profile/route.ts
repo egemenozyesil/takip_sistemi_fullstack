@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDb } from '@/app/lib/db';
+import { handleApiError } from '@/app/lib/apiError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -40,8 +41,7 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json(updatedStudent);
   } catch (error) {
-    console.error('Error updating profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'students/update-profile PUT', 'Internal server error', 500);
   }
 }
 
@@ -71,7 +71,6 @@ export async function GET(request: NextRequest) {
       ...student,
     });
   } catch (error) {
-    console.error('Error fetching profile:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return handleApiError(error, 'students/update-profile GET', 'Internal server error', 500);
   }
 }

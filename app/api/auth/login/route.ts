@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { loginUser } from '@/app/lib/auth';
+import { handleApiError } from '@/app/lib/apiError';
 import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -43,10 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     return response;
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: error.message || 'Giriş işlemi başarısız' },
-      { status: 401 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'auth/login POST', 'Giriş işlemi başarısız', 401);
   }
 }

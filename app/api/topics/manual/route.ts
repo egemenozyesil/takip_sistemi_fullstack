@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getDb } from '@/app/lib/db';
+import { handleApiError } from '@/app/lib/apiError';
 import { v4 as uuidv4 } from 'uuid';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -79,14 +80,12 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
-  } catch (error: any) {
-    console.error('Error adding topic manually:', error);
-    if (error.message === 'Unauthorized' || error.message.includes('jwt')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
-    );
+  } catch (error) {
+    const status =
+      error instanceof Error &&
+      (error.message === 'Unauthorized' || error.message.includes('jwt'))
+        ? 401
+        : 500;
+    return handleApiError(error, 'topics/manual POST', 'Internal server error', status);
   }
 }

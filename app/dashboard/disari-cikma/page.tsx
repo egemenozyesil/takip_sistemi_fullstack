@@ -151,7 +151,7 @@ export default function GoingOutPage() {
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
       <Navbar />
-      <div className="flex overflow-x-hidden w-full max-w-full">
+      <div className="flex overflow-x-hidden w-full max-w-full pt-16">
         <Sidebar />
         <div className="flex-1 md:ml-64 w-full max-w-full overflow-x-hidden">
           <main className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 overflow-x-hidden">
@@ -170,12 +170,14 @@ export default function GoingOutPage() {
             </div>
 
             {message && (
-              <Alert type={message.type} className="mb-6">
-                <div className="flex justify-between items-center">
-                  <span>{message.text}</span>
-                  <button onClick={() => setMessage(null)}>✕</button>
-                </div>
-              </Alert>
+              <div className="fixed top-16 left-4 right-4 md:left-1/2 md:-translate-x-1/2 md:right-auto md:max-w-md z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                <Alert type={message.type} className="shadow-lg">
+                  <div className="flex justify-between items-center">
+                    <span>{message.text}</span>
+                    <button onClick={() => setMessage(null)} className="font-medium">✕</button>
+                  </div>
+                </Alert>
+              </div>
             )}
 
             {/* Stats Cards */}
@@ -304,7 +306,7 @@ export default function GoingOutPage() {
 
       {/* Add Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4">
           <Card className="w-full max-w-md">
             <CardHeader className="flex justify-between items-center">
               <CardTitle>Yeni Dışarı Çıkma Kaydı</CardTitle>

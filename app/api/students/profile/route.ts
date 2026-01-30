@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { getStudentByUserId, getAllStudents, getStudentAttendance } from '@/app/lib/students';
+import { handleApiError } from '@/app/lib/apiError';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -32,11 +33,8 @@ export async function GET(request: NextRequest) {
       attendance,
       attendanceRate: calculateAttendanceRate(attendance)
     });
-  } catch (error: any) {
-    return NextResponse.json(
-      { error: 'Hata: ' + error.message },
-      { status: 400 }
-    );
+  } catch (error) {
+    return handleApiError(error, 'students/profile GET', 'Hata oluştu', 400);
   }
 }
 
