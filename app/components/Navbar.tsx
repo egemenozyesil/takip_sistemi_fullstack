@@ -26,7 +26,7 @@ interface SearchResult {
 }
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -91,7 +91,7 @@ export default function Navbar() {
     router.push(`/dashboard/konu-takip?topic=${topicId}`);
   };
 
-  if (!user) {
+  if (loading || !user) {
     return null;
   }
 
@@ -207,7 +207,10 @@ export default function Navbar() {
             {user && (
               <div className="relative" ref={userMenuRef}>
                 <button
-                  onClick={() => setShowUserMenu(!showUserMenu)}
+                  onClick={() => {
+                    console.log('User menu clicked, current state:', showUserMenu);
+                    setShowUserMenu(!showUserMenu);
+                  }}
                   className="flex items-center gap-3 px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200 group"
                 >
                   <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white font-semibold text-sm group-hover:bg-white/30 transition-colors">
@@ -225,7 +228,7 @@ export default function Navbar() {
 
                 {/* User Dropdown Menu */}
                 {showUserMenu && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="absolute right-0 bottom-full mb-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 py-2 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                     <div className="px-4 py-3 border-b border-gray-200">
                       <p className="text-sm font-semibold text-gray-900">{user.name}</p>
                       <p className="text-xs text-gray-600 truncate">{user.email}</p>
@@ -249,6 +252,7 @@ export default function Navbar() {
                     <div className="border-t border-gray-200 my-1"></div>
                     <button
                       onClick={() => {
+                        console.log('Logout clicked');
                         setShowUserMenu(false);
                         handleLogout();
                       }}

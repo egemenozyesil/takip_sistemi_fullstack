@@ -9,7 +9,7 @@ import { Input } from '@/app/components/Input';
 import { Alert } from '@/app/components/Alert';
 import Sidebar from '@/app/components/Sidebar';
 import Navbar from '@/app/components/Navbar';
-import { Mail, Phone, BookOpen, FileText, Save, X } from 'lucide-react';
+import { Mail, Phone, BookOpen, FileText, Save, X, LogOut } from 'lucide-react';
 
 interface ProfileData {
   id: string;
@@ -23,7 +23,7 @@ interface ProfileData {
 }
 
 export default function ProfilePage() {
-  const { user, loading, isAuthenticated } = useAuth();
+  const { user, loading, isAuthenticated, logout } = useAuth();
   const router = useRouter();
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -307,20 +307,21 @@ export default function ProfilePage() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-gray-900">Ek Bilgiler</CardTitle>
+                <CardTitle className="text-gray-900">Hesap Yönetimi</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between py-2 border-b border-gray-200">
-                    <span className="text-gray-800">Üyelik Tarihi</span>
-                    <span className="text-gray-800 font-medium">
-                      {new Date().toLocaleDateString('tr-TR')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2">
-                    <span className="text-gray-800">Hesap Durumu</span>
-                    <span className="text-green-600 font-medium">Aktif</span>
-                  </div>
+                <div className="space-y-3">
+                  <Button
+                    onClick={async () => {
+                      await logout();
+                      router.push('/auth/login');
+                    }}
+                    variant="danger"
+                    className="w-full"
+                  >
+                    <LogOut size={18} className="mr-2" />
+                    Çıkış Yap
+                  </Button>
                 </div>
               </CardContent>
             </Card>
