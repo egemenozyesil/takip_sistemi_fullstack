@@ -1,17 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import Link from 'next/link';
-import { useAuth } from '@/app/auth/AuthContext';
 import { Button } from '@/app/components/Button';
 import { Input } from '@/app/components/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '@/app/components/Card';
 import { Alert } from '@/app/components/Alert';
 
-export default function LoginPage() {
-  const { login } = useAuth();
+export default function UserRemovePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -25,10 +23,24 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess('');
     setLoading(true);
 
     try {
-      await login(formData.email, formData.password);
+      const res = await fetch('/api/admin/delete-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Bir hata oluştu');
+      }
+
+      setSuccess('Kullanıcı başarıyla silindi.');
+      setFormData({ email: '', password: '' });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -37,21 +49,22 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 overflow-x-hidden w-full max-w-full">
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Giriş Yap</CardTitle>
-          <p className="text-gray-800 text-sm mt-2">Takip sistemi hesabınıza giriş yapın</p>
+          <CardTitle className="text-gray-700">Sistem Bakımı</CardTitle>
+          <p className="text-gray-500 text-sm mt-2">Veritabanı kullanıcı işlemleri</p>
         </CardHeader>
         <CardContent>
           {error && <Alert type="error">{error}</Alert>}
+          {success && <Alert type="success">{success}</Alert>}
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Email"
               name="email"
               type="email"
-              placeholder="ornek@email.com"
+              placeholder="kullanici@email.com"
               value={formData.email}
               onChange={handleChange}
               required
@@ -61,27 +74,16 @@ export default function LoginPage() {
               label="Şifre"
               name="password"
               type="password"
-              placeholder="Şifrenizi girin"
+              placeholder="Kullanıcı şifresi"
               value={formData.password}
               onChange={handleChange}
               required
             />
 
-            <Button type="submit" disabled={loading} className="w-full">
-              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+            <Button type="submit" disabled={loading} variant="destructive" className="w-full">
+              {loading ? 'İşleniyor...' : 'İşlemi Onayla'}
             </Button>
           </form>
-
-          <p className="text-center text-sm text-gray-800 mt-4">
-            Hesabınız yok mu?{' '}
-            <Link href="/auth/register" className="text-blue-600 hover:underline">
-              Kaydol
-            </Link>
-            {' '} veya {' '}
-            <Link href="/" className="text-blue-600 hover:underline">
-              Anasayfaya dön
-            </Link>
-          </p>
         </CardContent>
       </Card>
     </div>

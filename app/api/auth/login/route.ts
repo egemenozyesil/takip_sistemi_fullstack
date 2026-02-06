@@ -26,6 +26,9 @@ export async function POST(request: NextRequest) {
       { expiresIn: '7d' }
     );
 
+    console.log(token);
+    
+
     const response = NextResponse.json(
       {
         message: 'Başarıyla giriş yapıldı',

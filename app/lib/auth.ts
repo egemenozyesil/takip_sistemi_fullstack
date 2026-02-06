@@ -73,6 +73,9 @@ export async function loginUser(input: LoginInput) {
   try {
     const user = db.prepare('SELECT * FROM users WHERE email = ?').get(input.email) as User | undefined;
 
+    console.log(user);
+    
+
     if (!user) {
       throw new Error('Email veya şifre yanlış');
     }
