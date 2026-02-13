@@ -13,13 +13,26 @@ import { Mail, Phone, BookOpen, FileText, Save, X, LogOut } from 'lucide-react';
 
 interface ProfileData {
   id: string;
-  name: string;
-  email: string;
-  student_number: string;
-  department: string | null;
-  phone: string | null;
-  bio: string | null;
-  avatar: string | null;
+  name?: string | null;
+  email?: string | null;
+  student_number?: string | null;
+  department?: string | null;
+  phone?: string | null;
+  bio?: string | null;
+  avatar?: string | null;
+}
+
+function profileFromUser(user: { id: string; name: string; email: string }): ProfileData {
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    student_number: '',
+    department: null,
+    phone: null,
+    bio: null,
+    avatar: null,
+  };
 }
 
 export default function ProfilePage() {
@@ -47,19 +60,28 @@ export default function ProfilePage() {
   }, [user, loading, isAuthenticated, router]);
 
   const fetchProfile = async () => {
+    if (!user) return;
     try {
       const response = await fetch('/api/students/update-profile');
       if (response.ok) {
         const data = await response.json();
-        setProfile(data);
-        setFormData({
-          phone: data.phone || '',
-          department: data.department || '',
-          bio: data.bio || '',
+        setProfile({
+          ...profileFromUser(user),
+          ...data,
         });
+        setFormData({
+          phone: data.phone ?? '',
+          department: data.department ?? '',
+          bio: data.bio ?? '',
+        });
+      } else {
+        setProfile(profileFromUser(user));
+        setFormData({ phone: '', department: '', bio: '' });
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+      setProfile(profileFromUser(user));
+      setFormData({ phone: '', department: '', bio: '' });
       setMessage({ type: 'error', text: 'Profil yüklenirken hata oluştu' });
     }
   };
@@ -87,7 +109,7 @@ export default function ProfilePage() {
 
       if (response.ok) {
         const updated = await response.json();
-        setProfile(updated);
+        setProfile((prev) => ({ ...(prev ?? profileFromUser(user!)), ...updated }));
         setIsEditing(false);
         setMessage({ type: 'success', text: 'Profil başarıyla güncellendi' });
         setTimeout(() => setMessage({ type: '', text: '' }), 3000);
@@ -113,9 +135,11 @@ export default function ProfilePage() {
     );
   }
 
-  if (!user || !profile) {
+  if (!user) {
     return null;
   }
+
+  const displayProfile = profile ?? profileFromUser(user);
 
   return (
     <div className="min-h-screen bg-gray-50 overflow-x-hidden w-full max-w-full">
@@ -146,9 +170,9 @@ export default function ProfilePage() {
                     onClick={() => {
                       if (isEditing) {
                         setFormData({
-                          phone: profile.phone || '',
-                          department: profile.department || '',
-                          bio: profile.bio || '',
+                          phone: displayProfile.phone ?? '',
+                          department: displayProfile.department ?? '',
+                          bio: displayProfile.bio ?? '',
                         });
                       }
                       setIsEditing(!isEditing);
@@ -176,7 +200,7 @@ export default function ProfilePage() {
                           Ad Soyad
                         </label>
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
-                          <span className="text-gray-800">{profile.name}</span>
+                          <span className="text-gray-800">{displayProfile.name ?? '—'}</span>
                         </div>
                       </div>
 
@@ -186,7 +210,7 @@ export default function ProfilePage() {
                         </label>
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                           <BookOpen size={18} className="text-gray-800" />
-                          <span className="text-gray-800">{profile.student_number}</span>
+                          <span className="text-gray-800">{displayProfile.student_number ?? 'Belirtilmemiş'}</span>
                         </div>
                       </div>
                     </div>
@@ -197,7 +221,7 @@ export default function ProfilePage() {
                       </label>
                       <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                         <Mail size={18} className="text-gray-800" />
-                        <span className="text-gray-800">{profile.email}</span>
+                        <span className="text-gray-800">{displayProfile.email ?? '—'}</span>
                       </div>
                     </div>
 
@@ -208,7 +232,7 @@ export default function ProfilePage() {
                         </label>
                         <div className="p-3 bg-gray-50 rounded-lg">
                           <span className="text-gray-800">
-                            {profile.department || 'Belirtilmemiş'}
+                            {displayProfile.department ?? 'Belirtilmemiş'}
                           </span>
                         </div>
                       </div>
@@ -219,18 +243,18 @@ export default function ProfilePage() {
                         </label>
                         <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
                           <Phone size={18} className="text-gray-800" />
-                          <span className="text-gray-800">{profile.phone || 'Belirtilmemiş'}</span>
+                          <span className="text-gray-800">{displayProfile.phone ?? 'Belirtilmemiş'}</span>
                         </div>
                       </div>
                     </div>
 
-                    {profile.bio && (
+                    {(displayProfile.bio ?? '') && (
                       <div>
                         <label className="block text-sm font-medium text-gray-900 mb-2">
                           Biyografi
                         </label>
                         <div className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-gray-800 whitespace-pre-wrap">{profile.bio}</p>
+                          <p className="text-gray-800 whitespace-pre-wrap">{displayProfile.bio}</p>
                         </div>
                       </div>
                     )}
@@ -245,7 +269,7 @@ export default function ProfilePage() {
                         Ad Soyad
                       </label>
                       <div className="p-3 bg-gray-50 rounded-lg text-gray-800">
-                        {profile.name}
+                        {displayProfile.name ?? '—'}
                       </div>
                     </div>
 
