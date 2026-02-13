@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/auth/AuthContext';
@@ -37,19 +38,48 @@ export default function Navbar() {
   const [showResults, setShowResults] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const updateDropdownPosition = () => {
+    const el = searchRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    setDropdownPosition({
+      top: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+    });
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowResults(false);
+      const target = event.target as Node;
+      if (searchRef.current && !searchRef.current.contains(target)) {
+        const isPortal = document.getElementById('navbar-search-portal')?.contains(target);
+        if (!isPortal) setShowResults(false);
       }
     };
 
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  useLayoutEffect(() => {
+    if (showResults || isSearching) updateDropdownPosition();
+  }, [showResults, isSearching, searchResults.length, searchQuery]);
+
+  useEffect(() => {
+    if (!showResults && !isSearching) return;
+    const onScrollOrResize = () => updateDropdownPosition();
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [showResults, isSearching]);
 
   useEffect(() => {
     const searchTopics = async () => {
@@ -95,7 +125,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-lg fixed top-0 left-0 right-0 z-50 backdrop-blur-sm">
+    <nav className="fixed top-0 left-0 right-0 z-[100] bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700 shadow-lg backdrop-blur-sm">
       <div className="w-full max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
         <div className="flex justify-between items-center h-16 gap-4">
           {/* Logo and Brand */}
@@ -133,7 +163,7 @@ export default function Navbar() {
             </div>
           )}
 
-          {/* Search Bar - Desktop */}
+          {/* Search Bar - Desktop: dropdown portal ile body'de, böylece z-index ve overflow sorunu olmaz */}
           {user && (
             <div className="hidden lg:flex flex-1 max-w-md mx-8 relative" ref={searchRef}>
               <div className="relative w-full">
@@ -162,42 +192,6 @@ export default function Navbar() {
                   </button>
                 )}
               </div>
-
-              {/* Search Results Dropdown */}
-              {showResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-96 overflow-y-auto z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {searchResults.map((result) => (
-                    <button
-                      key={result.id}
-                      onClick={() => handleResultClick(result.id)}
-                      className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors group"
-                    >
-                      <div className="font-medium text-gray-900 group-hover:text-blue-600">
-                        {result.lesson_name}
-                        {result.unit && (
-                          <span className="text-gray-500"> - {result.unit}</span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-700 mt-1">{result.topic}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {isSearching && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 text-center text-gray-800">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
-                    <span>Aranıyor...</span>
-                  </div>
-                </div>
-              )}
-
-              {showResults && searchQuery.length >= 2 && searchResults.length === 0 && !isSearching && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 p-4 text-center text-gray-800">
-                  Sonuç bulunamadı
-                </div>
-              )}
             </div>
           )}
 
@@ -231,6 +225,58 @@ export default function Navbar() {
             )}
           </div>
         </div>
+
+        {/* Desktop search dropdown: portal ile body'de, her zaman en üstte */}
+        {typeof document !== 'undefined' &&
+          user &&
+          ((showResults && searchResults.length > 0) ||
+            isSearching ||
+            (showResults && searchQuery.length >= 2 && searchResults.length === 0 && !isSearching)) &&
+          createPortal(
+              <div
+                id="navbar-search-portal"
+                className="fixed z-[9999] rounded-xl shadow-2xl border border-gray-200 bg-white overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                style={{
+                  top: dropdownPosition.top + 8,
+                  left: dropdownPosition.left,
+                  width: Math.max(dropdownPosition.width, 280),
+                  maxHeight: 'min(24rem, 80vh)',
+                }}
+              >
+                {isSearching && (
+                  <div className="p-4 text-center text-gray-800">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600" />
+                      <span>Aranıyor...</span>
+                    </div>
+                  </div>
+                )}
+                {!isSearching && showResults && searchResults.length > 0 && (
+                  <div className="max-h-96 overflow-y-auto">
+                    {searchResults.map((result) => (
+                      <button
+                        key={result.id}
+                        type="button"
+                        onClick={() => handleResultClick(result.id)}
+                        className="w-full text-left px-4 py-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors group"
+                      >
+                        <div className="font-medium text-gray-900 group-hover:text-blue-600">
+                          {result.lesson_name}
+                          {result.unit && (
+                            <span className="text-gray-500"> - {result.unit}</span>
+                          )}
+                        </div>
+                        <div className="text-sm text-gray-700 mt-1">{result.topic}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!isSearching && showResults && searchQuery.length >= 2 && searchResults.length === 0 && (
+                  <div className="p-4 text-center text-gray-800">Sonuç bulunamadı</div>
+                )}
+              </div>,
+              document.body
+            )}
 
         {/* Mobile Menu */}
         {showMobileMenu && user && (
