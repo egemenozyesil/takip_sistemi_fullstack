@@ -100,3 +100,12 @@ export function getUserById(id: string) {
   const db = getDb();
   return db.prepare('SELECT id, email, name, role, created_at FROM users WHERE id = ?').get(id);
 }
+
+export function updateUserNameAndEmail(userId: string, name: string, email: string) {
+  const db = getDb();
+  const existing = db.prepare('SELECT id FROM users WHERE email = ? AND id != ?').get(email, userId);
+  if (existing) {
+    throw new Error('Bu email zaten başka bir kullanıcıda kayıtlı');
+  }
+  db.prepare('UPDATE users SET name = ?, email = ? WHERE id = ?').run(name, email, userId);
+}

@@ -26,7 +26,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ user, token });
+    const response: { user: typeof user; token: string; impersonatedBy?: string } = { user, token };
+    if (decoded.impersonatedBy) {
+      response.impersonatedBy = decoded.impersonatedBy;
+    }
+    return NextResponse.json(response);
   } catch (error) {
     return handleApiError(error, 'auth/me GET', 'Yetkisiz erişim', 401);
   }

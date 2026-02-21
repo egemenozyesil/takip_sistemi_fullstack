@@ -14,9 +14,12 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  impersonatedBy: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (data: any) => Promise<void>;
   logout: () => Promise<void>;
+  endImpersonation: () => Promise<void>;
+  refreshUser: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
@@ -25,26 +28,31 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [impersonatedBy, setImpersonatedBy] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    // Check for existing session
-    const checkAuth = async () => {
-      try {
-        const response = await fetch('/api/auth/me');
-        if (response.ok) {
-          const data = await response.json();
-          setUser(data.user);
-          setToken(data.token);
-        }
-      } catch (error) {
-        console.log('Not authenticated');
-      } finally {
-        setLoading(false);
+  const refreshUser = async () => {
+    try {
+      const response = await fetch('/api/auth/me');
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+        setToken(data.token);
+        setImpersonatedBy(data.impersonatedBy ?? null);
       }
-    };
+    } catch {
+      setUser(null);
+      setToken(null);
+      setImpersonatedBy(null);
+    }
+  };
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      await refreshUser();
+      setLoading(false);
+    };
     checkAuth();
   }, []);
 
@@ -87,7 +95,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetch('/api/auth/logout', { method: 'POST' });
     setUser(null);
     setToken(null);
+    setImpersonatedBy(null);
     router.push('/');
+  };
+
+  const endImpersonation = async () => {
+    const response = await fetch('/api/admin/impersonate-end', { method: 'POST' });
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error);
+    }
+    await refreshUser();
+    router.push('/admin');
   };
 
   return (
@@ -96,9 +115,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         token,
         loading,
+        impersonatedBy,
         login,
         register,
         logout,
+        endImpersonation,
+        refreshUser,
         isAuthenticated: !!user
       }}
     >

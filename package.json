@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed-admin": "node scripts/seed-admin.js"
   },
   "dependencies": {
     "apexcharts": "^4.0.0",
@@ -33,12 +34,14 @@
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "jsonwebtoken": "^9.0.3",
     "next-cookies": "^2.0.3",
     "shadcn-ui": "^0.9.5",
+    "sql.js": "^1.14.0",
     "sqlite3": "^5.1.7",
     "tailwindcss": "^4",
     "typescript": "^5"

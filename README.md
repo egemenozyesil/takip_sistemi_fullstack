@@ -130,6 +130,26 @@ Sistem JWT token tabanlı kimlik doğrulama kullanır:
 
 ### Protected Sayfalar
 - `/dashboard` - Öğrenci dashboard
+- `/admin` - Yönetim paneli (sadece `role = 'admin'` olan kullanıcılar)
+
+### İlk admin kullanıcısı
+Yönetim paneline erişmek için en az bir kullanıcının admin rolüne sahip olması gerekir.
+
+**Yöntem 1 – Seed script (önerilen):** Proje kökünde:
+
+```bash
+npm run seed-admin
+```
+
+Varsayılan admin: `admin@example.com` / `admin123`. Özelleştirmek için:
+
+```bash
+ADMIN_EMAIL=admin@okul.com ADMIN_PASSWORD=guclu_sifre ADMIN_NAME="Site Yöneticisi" npm run seed-admin
+```
+
+Veritabanı henüz yoksa önce `npm run dev` ile uygulamayı bir kez çalıştırın; `data/takip.db` oluştuktan sonra script'i tekrar çalıştırın.
+
+**Yöntem 2 – Manuel:** Önce normal kayıt ile bir kullanıcı oluşturun, ardından SQLite ile `UPDATE users SET role = 'admin' WHERE email = '...';` çalıştırın.
 
 ## 🔧 Ortam Değişkenleri
 

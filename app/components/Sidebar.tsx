@@ -13,7 +13,8 @@ import {
   Clock,
   FileText,
   Gamepad2,
-  MapPin
+  MapPin,
+  Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -34,13 +35,39 @@ const navigationItems = [
 export default function Sidebar({ onAddStats }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, logout, impersonatedBy, endImpersonation } = useAuth();
 
   return (
     <aside className="hidden md:flex w-64 bg-gray-50 border-r border-gray-200 flex-col h-[calc(100vh-4rem)] fixed top-16 left-0 z-40">
+      {/* Impersonation banner */}
+      {impersonatedBy && (
+        <div className="p-4 border-b border-amber-200 bg-amber-50">
+          <p className="text-sm font-medium text-amber-800 mb-2">Öğrenci olarak görüntülüyorsunuz</p>
+          <button
+            onClick={async () => {
+              await endImpersonation();
+            }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-100 text-amber-800 hover:bg-amber-200 transition-colors text-sm font-medium"
+          >
+            <LogOut size={16} />
+            Yönetici oturumuna dön
+          </button>
+        </div>
+      )}
       {/* Navigation Menu */}
       <div className="flex-1 overflow-y-auto p-4">
         <nav className="space-y-2">
+          {user?.role === 'admin' && !impersonatedBy && (
+            <Link
+              href="/admin"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                pathname?.startsWith('/admin') ? 'bg-blue-600 text-white' : 'text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <Shield size={20} />
+              <span className="font-medium">Yönetim Paneli</span>
+            </Link>
+          )}
           {navigationItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;

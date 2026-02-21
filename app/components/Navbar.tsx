@@ -20,7 +20,8 @@ import {
   FileText,
   Book,
   Gamepad2,
-  MapPin
+  MapPin,
+  Shield
 } from 'lucide-react';
 
 interface SearchResult {
@@ -31,7 +32,7 @@ interface SearchResult {
 }
 
 export default function Navbar() {
-  const { user, logout, loading } = useAuth();
+  const { user, logout, loading, impersonatedBy } = useAuth();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -153,6 +154,15 @@ export default function Navbar() {
                 <LayoutDashboard size={18} />
                 <span>Dashboard</span>
               </Link>
+              {user.role === 'admin' && !impersonatedBy && (
+                <Link
+                  href="/admin"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200 font-medium"
+                >
+                  <Shield size={18} />
+                  <span>Yönetim Paneli</span>
+                </Link>
+              )}
               <Link
                 href="/dashboard/profile"
                 className="flex items-center gap-2 px-4 py-2 rounded-lg text-white/90 hover:text-white hover:bg-white/10 transition-all duration-200 font-medium"
@@ -329,6 +339,16 @@ export default function Navbar() {
                 <LayoutDashboard size={20} />
                 <span>Dashboard</span>
               </Link>
+              {user.role === 'admin' && !impersonatedBy && (
+                <Link
+                  href="/admin"
+                  onClick={() => setShowMobileMenu(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-white hover:bg-white/10 transition-colors"
+                >
+                  <Shield size={20} />
+                  <span>Yönetim Paneli</span>
+                </Link>
+              )}
               <Link
                 href="/dashboard/gunluk-calisma"
                 onClick={() => setShowMobileMenu(false)}
